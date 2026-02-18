@@ -1,0 +1,6 @@
+=== Friendly Guardian Report ===
+Transaction: [1500, 3000, 23, 1, 1]
+Decision: decline
+High amount and risky country
+Risky country
+Risky device
