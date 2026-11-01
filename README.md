@@ -1,38 +1,63 @@
-# Guardian AI
+﻿# AI Code Guardian
 
-**AI Code Guardian — A rule-based static analysis tool for Python**
+A lightweight, rule-based static analysis tool for Python.
 
-## 👋 About Me
+Guardian uses Python's built-in AST module to identify potential
+incomplete return paths without executing source code.
 
-Hi, I'm **bzorg-labs**.
+## Features
 
-I'm building Guardian, a Python static analysis tool designed to identify potential issues in code, especially incomplete return paths and control-flow problems.
+- Python syntax error detection
+- Basic return-path analysis
+- Conditional branch analysis
+- Recursive directory scanning
+- Command-line interface
+- Non-zero exit codes when issues are detected
+- Automated tests with pytest
+- GitHub Actions integration
 
-## 🎯 Project Goals
+## Installation
 
-- Detect functions that may finish without returning a value or raising an exception.
-- Analyze conditional branches and return paths.
-- Report Python syntax errors.
-- Build a foundation for more advanced control-flow and exception-flow analysis.
+Clone the repository:
 
-## 🛠️ Current Features
+    git clone https://github.com/bzorg-labs/Guardian--ai.git
+    cd Guardian--ai
 
-- Python source parsing with the `ast` module.
-- File and directory scanning.
-- Rule-based warnings for potentially incomplete return paths.
-- Automated tests with `pytest`.
+## Usage
 
-## 🔬 Current Focus
+Analyze a Python file:
 
-- Improving return-path analysis.
-- Expanding test coverage with edge cases.
-- Reducing false positives.
-- Exploring exception flow and more advanced control-flow reasoning.
+    python code_guardian.py sample.py
 
-## 💡 Philosophy
+Analyze a directory:
 
-I learn by building small tools, testing ideas, and documenting the engineering process.
+    python code_guardian.py path/to/project
 
-## 📍 Status
+## Tests
 
-**Early prototype — actively developing and testing.**
+Install pytest:
+
+    python -m pip install pytest
+
+Run tests:
+
+    python -m pytest -v
+
+## Limitations
+
+Guardian is an early prototype. Its current analysis is rule-based
+and does not fully understand all Python control-flow structures.
+
+Complex loops, exception handling, and some nested structures
+may produce false positives or false negatives.
+
+Guardian is not a replacement for a mature static-analysis tool.
+
+## Project Status
+
+Early prototype. Under active development.
+
+## Author
+
+bzorg-labs
+https://github.com/bzorg-labs
