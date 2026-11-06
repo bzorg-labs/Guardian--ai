@@ -1,4 +1,8 @@
+import ast
+from code_guardian import analyze_sequence, Flow
+
 from code_guardian import check_python_file
+
 
 def test_function_with_missing_return(tmp_path):
     sample = tmp_path / "sample.py"
@@ -120,3 +124,131 @@ def test_return_after_loop(tmp_path):
     )
 
     assert check_python_file(str(sample)) == []
+def test_try_except_both_branches_return(tmp_path):
+    sample = tmp_path / "sample.py"
+    sample.write_text(
+        'def example():\n'
+        '    try:\n'
+        '        return 1\n'
+        '    except ValueError:\n'
+        '        return 0\n',
+        encoding="utf-8",
+    )
+
+    assert check_python_file(str(sample)) == []
+
+def test_try_finally_with_return(tmp_path):
+    sample = tmp_path / "sample.py"
+
+    sample.write_text(
+        'def calculate():\n'
+        '    try:\n'
+        '        return 100\n'
+        '    finally:\n'
+        '        print("Done")\n',
+        encoding="utf-8",
+    )
+
+    assert check_python_file(str(sample)) == []
+
+def test_try_finally_return_overrides_return(tmp_path):
+    sample = tmp_path / "sample.py"
+
+    sample.write_text(
+        'def calculate():\n'
+        '    try:\n'
+        '        return 100\n'
+        '    finally:\n'
+        '        return 200\n',
+        encoding="utf-8",
+    )
+
+    assert check_python_file(str(sample)) == []
+
+def test_try_return_without_except_and_finally_print(tmp_path):
+    sample = tmp_path / "sample.py"
+
+    sample.write_text(
+        'def calculate():\n'
+        '    try:\n'
+        '        return 100\n'
+        '    finally:\n'
+        '        print("Done")\n'
+        '    print("Unreachable")\n',
+        encoding="utf-8",
+    )
+
+    assert check_python_file(str(sample)) == []
+
+def test_analyze_if_both_branches_terminate():
+    tree = ast.parse(
+        "def f(x):\n"
+        "    if x > 0:\n"
+        "        return 10\n"
+        "    else:\n"
+        "        raise ValueError()\n"
+    )
+
+    outcomes = analyze_sequence(tree.body[0].body)
+
+    assert outcomes == {Flow.RETURN, Flow.RAISE}
+
+
+def test_analyze_if_without_else():
+    tree = ast.parse(
+        "def f(x):\n"
+        "    if x > 0:\n"
+        "        return 10\n"
+    )
+
+    outcomes = analyze_sequence(tree.body[0].body)
+
+    assert outcomes == {Flow.RETURN, Flow.FALLTHROUGH}
+
+def test_try_finally_mixed_paths():
+    source = """
+def calculate(x):
+    try:
+        if x > 0:
+            return 10
+    finally:
+        if x < 0:
+            return 20
+"""
+    tree = ast.parse(source)
+    function = tree.body[0]
+
+    outcomes = analyze_sequence(function.body)
+
+    assert Flow.RETURN in outcomes
+    assert Flow.FALLTHROUGH in outcomes
+
+def test_finally_return_overrides_fallthrough():
+    source = """
+def calculate():
+    try:
+        pass
+    finally:
+        return 20
+"""
+    tree = ast.parse(source)
+    function = tree.body[0]
+
+    outcomes = analyze_sequence(function.body)
+
+    assert outcomes == {Flow.RETURN}
+
+def test_finally_raise_overrides_return():
+    source = """
+def calculate():
+    try:
+        return 10
+    finally:
+        raise ValueError("failed")
+"""
+    tree = ast.parse(source)
+    function = tree.body[0]
+
+    outcomes = analyze_sequence(function.body)
+
+    assert outcomes == {Flow.RAISE}

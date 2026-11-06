@@ -2,8 +2,75 @@
 import ast
 import sys
 
+from enum import Enum, auto
 
 
+class Flow(Enum):
+    RETURN = auto()
+    RAISE = auto()
+    FALLTHROUGH = auto()
+    BREAK = auto()
+    CONTINUE = auto()
+
+def analyze_sequence(statements):
+    outcomes = {Flow.FALLTHROUGH}
+
+    for statement in statements:
+        if Flow.FALLTHROUGH not in outcomes:
+            break
+
+        outcomes.remove(Flow.FALLTHROUGH)
+
+        if isinstance(statement, ast.Return):
+            outcomes.add(Flow.RETURN)
+
+        elif isinstance(statement, ast.Raise):
+            outcomes.add(Flow.RAISE)
+
+        elif isinstance(statement, ast.If):
+            body_outcomes = analyze_sequence(statement.body)
+
+            else_outcomes = (
+                analyze_sequence(statement.orelse)
+                if statement.orelse
+                else {Flow.FALLTHROUGH}
+            )
+
+            outcomes.update(body_outcomes)
+            outcomes.update(else_outcomes)
+
+        elif isinstance(statement, (ast.Try, getattr(ast, "TryStar", ast.Try))):
+            try_outcomes = analyze_sequence(statement.body)
+
+            for handler in statement.handlers:
+                try_outcomes.update(
+                    analyze_sequence(handler.body)
+                )
+
+            if statement.orelse and Flow.FALLTHROUGH in try_outcomes:
+                try_outcomes.remove(Flow.FALLTHROUGH)
+                try_outcomes.update(
+                    analyze_sequence(statement.orelse)
+                )
+
+            if statement.finalbody:
+                final_outcomes = analyze_sequence(statement.finalbody)
+                combined = set()
+
+                for final_outcome in final_outcomes:
+                    if final_outcome == Flow.FALLTHROUGH:
+                        combined.update(try_outcomes)
+                    else:
+                        combined.add(final_outcome)
+
+                try_outcomes = combined
+
+            outcomes.update(try_outcomes)
+
+        else:
+            outcomes.add(Flow.FALLTHROUGH)
+
+    return outcomes
 
 
 
@@ -15,19 +82,30 @@ def always_terminates(statements):
 
         if isinstance(statement, ast.If):
             body_terminates = always_terminates(statement.body)
-
-            if statement.orelse:
-                else_terminates = always_terminates(statement.orelse)
-            else:
-                else_terminates = False
+            else_terminates = (
+                always_terminates(statement.orelse)
+                if statement.orelse
+                else False
+            )
 
             if body_terminates and else_terminates:
                 return True
 
+        if isinstance(statement, ast.Try):
+            body_terminates = always_terminates(statement.body)
+
+            handlers_terminate = all(
+                always_terminates(handler.body)
+                for handler in statement.handlers
+            )
+
+            if body_terminates and handlers_terminate:
+                return True
+
+            if statement.finalbody and always_terminates(statement.finalbody):
+                return True
+
     return False
-
-
-
 
 
 
@@ -48,7 +126,7 @@ def check_python_file(filename):
             if node.name.startswith("test_"):
                 continue
 
-            if not always_terminates(node.body):
+            if Flow.FALLTHROUGH in analyze_sequence(node.body):
                 issues.append(
                     f"Function '{node.name}' may fall through "
                     "without returning or raising."
