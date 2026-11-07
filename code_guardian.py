@@ -27,6 +27,51 @@ def analyze_sequence(statements):
         elif isinstance(statement, ast.Raise):
             outcomes.add(Flow.RAISE)
 
+        elif isinstance(statement, ast.Break):
+            outcomes.add(Flow.BREAK)
+
+        elif isinstance(statement, ast.Continue):
+            outcomes.add(Flow.CONTINUE)
+
+        elif isinstance(statement, (ast.For, ast.AsyncFor)):
+            body_outcomes = analyze_sequence(statement.body)
+
+            loop_outcomes = (
+                body_outcomes
+                - {Flow.BREAK, Flow.CONTINUE, Flow.FALLTHROUGH}
+            )
+
+            if statement.orelse:
+                loop_outcomes.update(
+                    analyze_sequence(statement.orelse)
+                )
+            else:
+                loop_outcomes.add(Flow.FALLTHROUGH)
+
+            if Flow.BREAK in body_outcomes:
+                loop_outcomes.add(Flow.FALLTHROUGH)
+
+            outcomes.update(loop_outcomes)
+
+        elif isinstance(statement, ast.While):
+            body_outcomes = analyze_sequence(statement.body)
+
+            loop_outcomes = (
+                body_outcomes
+                - {Flow.BREAK, Flow.CONTINUE, Flow.FALLTHROUGH}
+            )
+
+            if statement.orelse:
+                loop_outcomes.update(
+                    analyze_sequence(statement.orelse)
+            )
+            else:
+                loop_outcomes.add(Flow.FALLTHROUGH)
+
+            if Flow.BREAK in body_outcomes:
+                loop_outcomes.add(Flow.FALLTHROUGH)
+            outcomes.update(loop_outcomes)
+
         elif isinstance(statement, ast.If):
             body_outcomes = analyze_sequence(statement.body)
 

@@ -252,3 +252,81 @@ def calculate():
     outcomes = analyze_sequence(function.body)
 
     assert outcomes == {Flow.RAISE}
+
+def test_for_loop_with_return_and_break():
+    source = """
+def calculate(items):
+    for item in items:
+        if item > 0:
+            return item
+        break
+"""
+    tree = ast.parse(source)
+    function = tree.body[0]
+
+    outcomes = analyze_sequence(function.body)
+
+    assert Flow.RETURN in outcomes
+    assert Flow.FALLTHROUGH in outcomes
+
+def test_for_loop_continue_does_not_end_function():
+    source = """
+def calculate(items):
+    for item in items:
+        if item > 0:
+            continue
+        return item
+"""
+    tree = ast.parse(source)
+    function = tree.body[0]
+
+    outcomes = analyze_sequence(function.body)
+
+    assert Flow.RETURN in outcomes
+    assert Flow.FALLTHROUGH in outcomes
+
+def test_for_loop_else_without_break():
+    source = """
+def calculate(items):
+    for item in items:
+        if item > 0:
+            return item
+    else:
+        return 0
+"""
+    tree = ast.parse(source)
+    function = tree.body[0]
+
+    outcomes = analyze_sequence(function.body)
+
+    assert outcomes == {Flow.RETURN}
+
+def test_for_loop_break_skips_else():
+    source = """
+def calculate(items):
+    for item in items:
+        break
+    else:
+        return 100
+"""
+    tree = ast.parse(source)
+    function = tree.body[0]
+
+    outcomes = analyze_sequence(function.body)
+
+    assert Flow.FALLTHROUGH in outcomes
+    assert Flow.FALLTHROUGH in outcomes
+
+def test_while_loop_may_not_execute():
+    source = """
+def calculate(x):
+    while x > 0:
+        return 10
+"""
+    tree = ast.parse(source)
+    function = tree.body[0]
+
+    outcomes = analyze_sequence(function.body)
+
+    assert Flow.RETURN in outcomes
+    assert Flow.FALLTHROUGH in outcomes
