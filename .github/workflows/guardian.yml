@@ -24,7 +24,7 @@ jobs:
           python -m pip install pytest
 
       - name: Run Guardian
-        run: python code_guardian.py . --format json
+        run: python code_guardian.py code_guardian.py --format json
 
       - name: Run tests
         run: python -m pytest -v

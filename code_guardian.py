@@ -181,6 +181,8 @@ def check_python_file(filename):
     return issues
 
 def main(argv=None):
+    from pathlib import Path
+
     parser = argparse.ArgumentParser(
         description="AI Code Guardian"
     )
@@ -194,8 +196,6 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
-    from pathlib import Path
-
     target = Path(args.target)
 
     if not target.exists():
@@ -206,6 +206,10 @@ def main(argv=None):
         files = [target] if target.suffix == ".py" else []
     else:
         files = sorted(target.rglob("*.py"))
+
+    if not files:
+        print("No Python files found.")
+        return 0
 
     results = []
     total_issues = 0
