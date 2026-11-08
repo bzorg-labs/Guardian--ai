@@ -1,4 +1,5 @@
-
+import argparse
+import json
 import ast
 import sys
 
@@ -179,52 +180,73 @@ def check_python_file(filename):
 
     return issues
 
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="AI Code Guardian"
+    )
 
-    
+    parser.add_argument("target")
+    parser.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text"
+    )
 
+    args = parser.parse_args(argv)
 
-    
-
-
-
-
-if __name__ == "__main__":
-    import sys
     from pathlib import Path
 
-    if len(sys.argv) != 2:
-        print("Usage: python code_guardian.py <file_or_folder>")
-        raise SystemExit(1)
-
-    target = Path(sys.argv[1])
+    target = Path(args.target)
 
     if not target.exists():
         print(f"Error: '{target}' does not exist.")
-        raise SystemExit(1)
+        return 1
 
     if target.is_file():
         files = [target] if target.suffix == ".py" else []
     else:
         files = sorted(target.rglob("*.py"))
 
-    if not files:
-        print("No Python files found.")
-        raise SystemExit(0)
-
+    results = []
     total_issues = 0
 
     for file_path in files:
         issues = check_python_file(str(file_path))
-        print(f"\nChecking: {file_path}")
+        total_issues += len(issues)
 
-        if issues:
-            for issue in issues:
-                print(f"WARNING: {issue}")
-                total_issues += 1
-        else:
-            print("No issues found.")
+        results.append({
+            "file": str(file_path),
+            "status": "failed" if issues else "passed",
+            "issues": issues,
+        })
 
-    print(f"\nChecked {len(files)} Python file(s).")
-    print(f"Found {total_issues} issue(s).")
-    raise SystemExit(1 if total_issues > 0 else 0)
+    if args.format == "json":
+        report = {
+            "status": "failed" if total_issues else "passed",
+            "summary": {
+                "files_checked": len(files),
+                "issues_found": total_issues,
+            },
+            "files": results,
+        }
 
+        print(json.dumps(report, indent=2))
+
+    else:
+        for result in results:
+            print(f"\nChecking: {result['file']}")
+
+            if result["issues"]:
+                for issue in result["issues"]:
+                    print(f"WARNING: {issue}")
+            else:
+                print("No issues found.")
+
+        print(f"\nChecked {len(files)} Python file(s).")
+        print(f"Found {total_issues} issue(s).")
+
+    return 1 if total_issues > 0 else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
