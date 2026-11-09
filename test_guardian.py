@@ -330,3 +330,16 @@ def calculate(x):
 
     assert Flow.RETURN in outcomes
     assert Flow.FALLTHROUGH in outcomes
+
+def test_while_true_with_return_does_not_fall_through():
+    source = """
+def calculate():
+    while True:
+        return 100
+"""
+    tree = ast.parse(source)
+    function = tree.body[0]
+
+    outcomes = analyze_sequence(function.body)
+
+    assert outcomes == {Flow.RETURN}

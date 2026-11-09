@@ -62,15 +62,21 @@ def analyze_sequence(statements):
                 - {Flow.BREAK, Flow.CONTINUE, Flow.FALLTHROUGH}
             )
 
+            is_infinite_loop = (
+                isinstance(statement.test, ast.Constant)
+                and statement.test.value is True
+            )
+
             if statement.orelse:
                 loop_outcomes.update(
                     analyze_sequence(statement.orelse)
-            )
-            else:
+                )
+            elif not is_infinite_loop:
                 loop_outcomes.add(Flow.FALLTHROUGH)
 
             if Flow.BREAK in body_outcomes:
                 loop_outcomes.add(Flow.FALLTHROUGH)
+
             outcomes.update(loop_outcomes)
 
         elif isinstance(statement, ast.If):
