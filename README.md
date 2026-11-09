@@ -91,3 +91,13 @@ Early prototype — under active development.
 **bzorg-labs**
 
 https://github.com/bzorg-labs
+
+## Runnable Demo
+
+Run Guardian against the included examples:
+
+```bash
+python code_guardian.py good_example.py --format json
+python code_guardian.py bad_example.py --format json
+
+
