@@ -1,63 +1,93 @@
-﻿# AI Code Guardian
+﻿# Guardian — AI Code Guardian
 
-A lightweight, rule-based static analysis tool for Python.
+**Lightweight Python control-flow analysis for catching potentially incomplete return paths before code reaches production.**
 
-Guardian uses Python's built-in AST module to identify potential
-incomplete return paths without executing source code.
+Guardian is a Python static-analysis prototype that uses Python's built-in `ast` module to inspect function control flow without executing the code.
 
-## Features
+## The Problem
 
-- Python syntax error detection
-- Basic return-path analysis
-- Conditional branch analysis
-- Recursive directory scanning
-- Command-line interface
-- Non-zero exit codes when issues are detected
-- Automated tests with pytest
-- GitHub Actions integration
+Functions with incomplete return paths can produce unexpected `None` values and subtle bugs.
 
-## Installation
+Guardian checks Python functions for potentially incomplete return paths and reports issues before code is merged.
+
+## How It Works
+
+- Parses Python source code using the built-in AST module.
+- Analyzes selected control-flow structures.
+- Detects functions that may reach the end without returning or raising an exception.
+- Supports text and JSON reports.
+- Returns a non-zero exit code when issues are detected, making it usable in CI workflows.
+
+## Quick Start
+
+Requirements:
+- Python 3.14
+- pytest (for running tests)
 
 Clone the repository:
 
-    git clone https://github.com/bzorg-labs/Guardian--ai.git
-    cd Guardian--ai
+```bash
+git clone https://github.com/bzorg-labs/Guardian--ai.git
+cd Guardian--ai
+```
 
-## Usage
+Run Guardian against a Python file:
 
-Analyze a Python file:
+```bash
+python code_guardian.py code_guardian.py
+```
 
-    python code_guardian.py sample.py
+Generate a JSON report:
 
-Analyze a directory:
+```bash
+python code_guardian.py code_guardian.py --format json
+```
 
-    python code_guardian.py path/to/project
+Run the test suite:
 
-## Tests
+```bash
+python -m pytest -q
+```
 
-Install pytest:
+## Example
 
-    python -m pip install pytest
+Consider this function:
 
-Run tests:
+```python
+def calculate(value):
+    if value > 0:
+        return value
+```
 
-    python -m pytest -v
+When `value` is zero or negative, the function reaches the end without an explicit return.
 
-## Limitations
+Guardian reports:
 
-Guardian is an early prototype. Its current analysis is rule-based
-and does not fully understand all Python control-flow structures.
+```text
+Function 'calculate' may fall through without returning or raising.
+```
 
-Complex loops, exception handling, and some nested structures
-may produce false positives or false negatives.
+## GitHub Actions Integration
 
-Guardian is not a replacement for a mature static-analysis tool.
+Guardian can run as part of a GitHub Actions workflow.
+
+It uses exit codes to indicate whether potential issues were detected, allowing CI workflows to fail when Guardian finds a problem.
+
+## Current Limitations
+
+Guardian is an early-stage prototype.
+
+- Its control-flow analysis is limited to supported Python constructs.
+- It does not prove program correctness.
+- It does not replace mature static-analysis tools such as Pyright, Ruff, or Pylint.
+- It does not execute code or perform runtime testing.
 
 ## Project Status
 
-Early prototype. Under active development.
+Early prototype — under active development.
 
 ## Author
 
-bzorg-labs
+**bzorg-labs**
+
 https://github.com/bzorg-labs
